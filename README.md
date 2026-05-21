@@ -77,6 +77,16 @@ Every connected tab flashes red at once. The response tells you how many were re
 
 See [`activity-log.md`](activity-log.md) for the detailed running record.
 
+## Security caveats
+
+This is a live-demo project. A few defaults that are fine for a single laptop in a controlled room, but matter the moment you put it on a real network:
+
+- `audience/serve.py` binds to `0.0.0.0:8080`. `/broadcast`, `/trigger-denial`, and `/mcp` have **no authentication** — anyone on the same network can list tools or trigger the red-flash beat.
+- The wasmcp server (Spin) runs in public mode. No auth on `/mcp` either.
+- No rate limiting anywhere.
+
+For the talk room this is intentional. For anything beyond, add a token check, restrict the listen interface, or front it with a reverse proxy that does both.
+
 ## License
 
 Apache License 2.0. See [LICENSE](LICENSE) and [NOTICE](NOTICE).
