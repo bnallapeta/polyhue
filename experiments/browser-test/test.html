@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>jco transpile smoke test</title>
+  <script type="importmap">
+    {
+      "imports": {
+        "wasi:keyvalue/atomics": "./wasi-keyvalue-shim.mjs",
+        "wasi:keyvalue/batch": "./wasi-keyvalue-shim.mjs",
+        "wasi:keyvalue/store": "./wasi-keyvalue-shim.mjs",
+        "@bytecodealliance/preview2-shim/cli": "./node_modules/@bytecodealliance/preview2-shim/lib/browser/cli.js",
+        "@bytecodealliance/preview2-shim/clocks": "./node_modules/@bytecodealliance/preview2-shim/lib/browser/clocks.js",
+        "@bytecodealliance/preview2-shim/filesystem": "./node_modules/@bytecodealliance/preview2-shim/lib/browser/filesystem.js",
+        "@bytecodealliance/preview2-shim/http": "./node_modules/@bytecodealliance/preview2-shim/lib/browser/http.js",
+        "@bytecodealliance/preview2-shim/io": "./node_modules/@bytecodealliance/preview2-shim/lib/browser/io.js",
+        "@bytecodealliance/preview2-shim/random": "./node_modules/@bytecodealliance/preview2-shim/lib/browser/random.js",
+        "@bytecodealliance/preview2-shim/sockets": "./node_modules/@bytecodealliance/preview2-shim/lib/browser/sockets.js"
+      }
+    }
+  </script>
+</head>
+<body>
+  <pre id="out">loading…</pre>
+  <script type="module">
+    const out = document.getElementById('out');
+    const log = (m) => { out.textContent += '\n' + m; console.log(m); };
+    out.textContent = 'attempting to import color-server.js …';
+    try {
+      const mod = await import('./color-server.js');
+      log('LOADED OK');
+      log('top-level exports: ' + Object.keys(mod).join(', '));
+      log('incomingHandler keys: ' + Object.keys(mod.incomingHandler || {}).join(', '));
+    } catch (e) {
+      log('LOAD FAILED: ' + (e && e.message ? e.message : e));
+      log((e && e.stack) || '');
+    }
+  </script>
+</body>
+</html>
