@@ -1,0 +1,36 @@
+# Compiled wasm — always rebuildable
+*.wasm
+
+# Rust
+**/target/
+**/Cargo.lock
+
+# Python
+**/venv/
+**/__pycache__/
+*.pyc
+**/wit_world/
+
+# TypeScript / Node
+**/node_modules/
+**/src/generated/
+components/color-ts/dist/
+components/color-ts/build/
+components/color-ts/package-lock.json
+
+# Top-level composed artifacts + profile outputs
+/dist/
+
+# Experiments (jco transpile bundle is large + regeneratable)
+experiments/browser-test/node_modules/
+experiments/browser-test/interfaces/
+experiments/browser-test/*.d.ts
+experiments/browser-test/*.js
+experiments/browser-test/package-lock.json
+
+# OS / editor
+.DS_Store
+*.swp
+*.swo
+.vscode/
+.idea/
