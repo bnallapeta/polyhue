@@ -34,3 +34,6 @@ experiments/browser-test/package-lock.json
 *.swo
 .vscode/
 .idea/
+
+# Private working notes — kept local only, never tracked
+/private/

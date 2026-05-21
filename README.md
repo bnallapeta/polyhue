@@ -4,7 +4,7 @@ A polyglot MCP server composed from four WebAssembly Components — Rust, Python
 
 Each language component returns a color from a palette unique to that language. When a phone (or browser tab) loads the audience page, it's routed to one of the components by a server-side hash, gets back an HSL color, and paints itself with that color. A separate broadcast channel can flash every connected client red simultaneously — triggered by a policy denial inside the Regorus middleware.
 
-Built as a live demo for a talk on the WebAssembly Component Model + MCP. See [`docs/proposal.md`](docs/proposal.md) for the longer pitch and [`plan.md`](plan.md) for the running plan.
+Built as a live demo for a talk on the WebAssembly Component Model + MCP.
 
 ## What's inside
 
@@ -22,12 +22,9 @@ polyhue/
 │                                     #   triggers Regorus denial via /trigger-denial
 ├── dist/                             # composed artifact lands here (gitignored)
 │   └── polyhue.wasm
-├── docs/proposal.md                  # the talk proposal
-├── plan.md                           # build plan and decisions
-├── activity-log.md                   # running progress log
 ├── scripts/profile-sizes.py          # measure component sizes under strip passes
 └── experiments/                      # parked exploratory work
-    └── browser-test/                 # jco transpile experiment (see activity-log)
+    └── browser-test/                 # jco transpile experiment
 ```
 
 ## Prerequisites
@@ -67,15 +64,6 @@ Every connected tab flashes red at once. The response tells you how many were re
 | `GET`  | `/events` | server-sent events stream (clients subscribe here) |
 | `POST` | `/broadcast` | fan out an arbitrary event to all `/events` subscribers |
 | `POST` | `/trigger-denial` | call the Regorus-gated tool; on denial, broadcast `flash` |
-
-## Status
-
-- **Phase 1** (toolchain + reference projects) — complete.
-- **Phase 2** (Mac prototype: components, composition, audience flow, Regorus, size profiling, jco transpile experiment) — complete.
-- **Phase 3** (iteration + rehearsal) — next.
-- **Phase 4** (run the same artifact on the Pi) — pending.
-
-See [`activity-log.md`](activity-log.md) for the detailed running record.
 
 ## Security caveats
 
