@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <title>MCP Color</title>
+  <style>
+    html, body { margin: 0; height: 100%; width: 100%; overflow: hidden; }
+    body {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif;
+      background-color: #111;
+      color: rgba(255, 255, 255, 0.7);
+      transition: background-color 600ms ease;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+    body.flash {
+      background-color: #d93025 !important;
+      transition: background-color 80ms ease;
+    }
+    #status {
+      font-size: 14px;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      opacity: 0.6;
+    }
+    #debug {
+      position: fixed;
+      bottom: 12px;
+      left: 12px;
+      right: 12px;
+      font-size: 11px;
+      font-family: ui-monospace, Menlo, monospace;
+      opacity: 0.4;
+      text-align: center;
+    }
+    body.hide-debug #debug { display: none; }
+  </style>
+</head>
+<body>
+  <div id="status">loading…</div>
+  <div id="debug"></div>
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const DEBUG = params.get('debug') !== '0';
+    if (!DEBUG) document.body.classList.add('hide-debug');
+
+    const $status = document.getElementById('status');
+    const $debug = document.getElementById('debug');
+
+    function getOrMakeSession() {
+      let id = localStorage.getItem('mcp-session-id');
+      if (!id) {
+        id = (crypto.randomUUID && crypto.randomUUID()) ||
+             Math.random().toString(36).slice(2) + Date.now().toString(36);
+        localStorage.setItem('mcp-session-id', id);
+      }
+      return id;
+    }
+
+    async function fetchColor(seed) {
+      const resp = await fetch('/color', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ seed }),
+      });
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+      return resp.json();
+    }
+
+    function flashRed() {
+      document.body.classList.add('flash');
+      setTimeout(() => document.body.classList.remove('flash'), 800);
+    }
+    window.flashRed = flashRed;
+
+    function connectEvents() {
+      const es = new EventSource('/events');
+      es.onmessage = (ev) => {
+        try {
+          const msg = JSON.parse(ev.data);
+          if (msg.event === 'flash') flashRed();
+        } catch (_) { /* ignore */ }
+      };
+      es.onerror = () => {
+        // EventSource auto-reconnects; nothing to do here.
+      };
+    }
+
+    async function paintMe() {
+      const session = getOrMakeSession();
+      $debug.textContent = `session ${session.slice(0, 8)}… → calling /color…`;
+      try {
+        const color = await fetchColor(session);
+        document.body.style.backgroundColor = color.hsl;
+        $status.textContent = '';
+        $debug.textContent = `${color.language} (${color.routed_to}) · ${color.hsl} · session ${session.slice(0, 8)}…`;
+      } catch (e) {
+        $status.textContent = 'error';
+        $debug.textContent = String(e.message || e);
+      }
+    }
+
+    paintMe();
+    connectEvents();
+  </script>
+</body>
+</html>
