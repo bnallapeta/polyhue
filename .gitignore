@@ -37,3 +37,6 @@ experiments/browser-test/package-lock.json
 
 # Private working notes — kept local only, never tracked
 /private/
+
+# Local secrets
+.env
