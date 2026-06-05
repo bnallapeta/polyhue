@@ -2,13 +2,14 @@
 """Simulate N concurrent SSE subscribers, trigger a denial, report delivery."""
 
 import argparse
+import os
 import queue
 import threading
 import time
 import urllib.request
 import urllib.error
 
-BASE = "http://127.0.0.1:8080"
+BASE = os.environ.get("BASE", "http://127.0.0.1:8080")
 
 
 def subscribe(idx, results: queue.Queue, ready: threading.Event):

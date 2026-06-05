@@ -8,6 +8,7 @@ Checks:
 """
 
 import json
+import os
 import queue
 import re
 import sys
@@ -15,7 +16,7 @@ import threading
 import urllib.request
 import urllib.error
 
-BASE = "http://127.0.0.1:8080"
+BASE = os.environ.get("BASE", "http://127.0.0.1:8080")
 PASS = "\033[32mPASS\033[0m"
 FAIL = "\033[31mFAIL\033[0m"
 
