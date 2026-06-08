@@ -1,9 +1,9 @@
 {
   "$schema": "https://stacklit.dev/schema/v1.json",
   "version": "1",
-  "generated_at": "2026-06-05T05:29:07Z",
+  "generated_at": "2026-06-08T03:49:32Z",
   "stacklit_version": "dev",
-  "merkle_hash": "09475ea6a981c8af2fa3c896586152610fd50b20e1596853608cc30f24e34f8c",
+  "merkle_hash": "ebca665af00f29e60baec537ae080b98e08a00e95291711123cfa0b9556f0e0a",
   "project": {
     "name": "wasm_mcp_summit",
     "root": ".",
@@ -17,8 +17,8 @@
         "lines": 110
       },
       "python": {
-        "files": 8,
-        "lines": 1670
+        "files": 10,
+        "lines": 1878
       },
       "rust": {
         "files": 2,
@@ -32,8 +32,8 @@
   },
   "structure": {
     "entrypoints": null,
-    "total_files": 13,
-    "total_lines": 2127
+    "total_files": 15,
+    "total_lines": 2335
   },
   "modules": {
     "audience": {
@@ -181,15 +181,19 @@
     "scripts": {
       "purpose": "Scripts",
       "language": "python",
-      "files": 1,
-      "lines": 63,
+      "files": 3,
+      "lines": 271,
       "file_list": [
-        "profile-sizes.py"
+        "profile-sizes.py",
+        "smoke-test.py",
+        "stress-sse.py"
       ],
       "exports": [
+        "check(label, ok, detail=\"\")",
         "kb(path)",
         "run(cmd)",
-        "show(v)"
+        "show(v)",
+        "subscribe(idx, results: queue.Queue, ready: threading.Event)"
       ],
       "activity": "low"
     }
@@ -223,12 +227,24 @@
   "git": {
     "hot_files": [
       {
+        "path": ".gitignore",
+        "commits_90d": 3
+      },
+      {
         "path": "README.md",
         "commits_90d": 3
       },
       {
-        "path": ".gitignore",
+        "path": "scripts/smoke-test.py",
         "commits_90d": 2
+      },
+      {
+        "path": "scripts/stress-sse.py",
+        "commits_90d": 2
+      },
+      {
+        "path": "DEPENDENCIES.md",
+        "commits_90d": 1
       },
       {
         "path": "LICENSE",
@@ -289,33 +305,22 @@
       {
         "path": "components/color-py/wit/deps.lock",
         "commits_90d": 1
-      },
-      {
-        "path": "components/color-py/wit/deps.toml",
-        "commits_90d": 1
-      },
-      {
-        "path": "components/color-py/wit/deps/auth/jwt.wit",
-        "commits_90d": 1
-      },
-      {
-        "path": "components/color-py/wit/deps/auth/oauth.wit",
-        "commits_90d": 1
       }
     ],
     "recent": [
+      "orange-pi.md",
+      "scripts/smoke-test.py",
+      "scripts/stress-sse.py",
       ".gitignore",
+      "DEPENDENCIES.md",
+      "stacklit.json",
       "README.md",
       "experiments/browser-test/package.json",
       "experiments/browser-test/test.html",
-      "experiments/browser-test/wasi-keyvalue-shim.mjs",
-      "scripts/profile-sizes.py",
-      "audience/index.html",
-      "audience/serve.py",
-      "components/policy-gate/Cargo.toml",
-      "components/policy-gate/Makefile"
+      "experiments/browser-test/wasi-keyvalue-shim.mjs"
     ],
     "stable": [
+      "DEPENDENCIES.md",
       "LICENSE",
       "Makefile",
       "NOTICE",
@@ -324,8 +329,7 @@
       "components/color-py/Makefile",
       "components/color-py/README.md",
       "components/color-py/app.py",
-      "components/color-py/componentize_py_async_support/__init__.py",
-      "components/color-py/componentize_py_async_support/futures.py"
+      "components/color-py/componentize_py_async_support/__init__.py"
     ]
   },
   "hints": {
