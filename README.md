@@ -1,6 +1,6 @@
 # polyhue
 
-A polyglot MCP server composed from four WebAssembly Components — Rust, Python, TypeScript, and a Regorus-backed authorization gate — distributed as a single WASM artifact.
+A polyglot MCP server composed from three language components — Rust, Python, and TypeScript — plus a Regorus-backed authorization gate, distributed as a single WASM artifact.
 
 Each language component returns a color from a palette unique to that language. When a phone (or browser tab) loads the audience page, it's routed to one of the components by a server-side hash, gets back an HSL color, and paints itself with that color. A separate broadcast channel can flash every connected client red simultaneously — triggered by a policy denial inside the Regorus middleware.
 
@@ -10,7 +10,7 @@ Built as a live demo for a talk on the WebAssembly Component Model + MCP.
 
 ```
 polyhue/
-├── components/                       # four WASM tool components
+├── components/                       # three language components + a policy gate
 │   ├── color-rs/                     # Rust → red-orange palette
 │   ├── color-py/                     # Python → blue palette
 │   ├── color-ts/                     # TypeScript (Zod) → yellow/gold palette

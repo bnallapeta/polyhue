@@ -12,23 +12,60 @@
       align-items: center;
       justify-content: center;
       flex-direction: column;
-      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Inter", sans-serif;
       background-color: #111;
       color: rgba(255, 255, 255, 0.7);
       transition: background-color 600ms ease;
       -webkit-tap-highlight-color: transparent;
       user-select: none;
     }
-    body.flash {
-      background-color: #d93025 !important;
-      transition: background-color 80ms ease;
-    }
+    body.flashing { transition: background-color 60ms ease; }
+    body.flash { background-color: #d93025 !important; }
+
     #status {
       font-size: 14px;
       letter-spacing: 0.15em;
       text-transform: uppercase;
       opacity: 0.6;
     }
+
+    #card {
+      background: rgba(0, 0, 0, 0.42);
+      backdrop-filter: blur(10px) saturate(140%);
+      -webkit-backdrop-filter: blur(10px) saturate(140%);
+      padding: 30px 38px 26px;
+      border-radius: 26px;
+      text-align: center;
+      color: #fff;
+      max-width: 86vw;
+      box-shadow: 0 10px 36px rgba(0, 0, 0, 0.2);
+      opacity: 0;
+      transform: translateY(14px);
+      transition: opacity 380ms ease, transform 380ms ease;
+    }
+    #card.ready { opacity: 1; transform: translateY(0); }
+    #welcome {
+      font-size: 17px;
+      font-weight: 400;
+      letter-spacing: 0.01em;
+      line-height: 1.35;
+      margin: 0 0 16px 0;
+      opacity: 0.95;
+    }
+    #lang {
+      font-size: 44px;
+      font-weight: 700;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      margin: 0 0 12px 0;
+    }
+    #hsl {
+      font-size: 11px;
+      font-family: ui-monospace, Menlo, monospace;
+      letter-spacing: 0.04em;
+      opacity: 0.65;
+    }
+
     #debug {
       position: fixed;
       bottom: 12px;
@@ -38,20 +75,36 @@
       font-family: ui-monospace, Menlo, monospace;
       opacity: 0.4;
       text-align: center;
+      color: #fff;
     }
-    body.hide-debug #debug { display: none; }
+    body:not(.show-debug) #debug { display: none; }
   </style>
 </head>
 <body>
   <div id="status">loading…</div>
+  <div id="card">
+    <div id="welcome"></div>
+    <div id="lang"></div>
+    <div id="hsl"></div>
+  </div>
   <div id="debug"></div>
   <script>
     const params = new URLSearchParams(window.location.search);
-    const DEBUG = params.get('debug') !== '0';
-    if (!DEBUG) document.body.classList.add('hide-debug');
+    if (params.get('debug') === '1') document.body.classList.add('show-debug');
 
-    const $status = document.getElementById('status');
-    const $debug = document.getElementById('debug');
+    const $status  = document.getElementById('status');
+    const $card    = document.getElementById('card');
+    const $welcome = document.getElementById('welcome');
+    const $lang    = document.getElementById('lang');
+    const $hsl     = document.getElementById('hsl');
+    const $debug   = document.getElementById('debug');
+
+    const WELCOME = {
+      rust:       "Welcome to the Rust regime.",
+      python:     "Welcome to the Python world.",
+      typescript: "Welcome to TypeScript territory.",
+      javascript: "Welcome to TypeScript territory.",
+    };
 
     function getOrMakeSession() {
       let id = localStorage.getItem('mcp-session-id');
@@ -74,8 +127,19 @@
     }
 
     function flashRed() {
-      document.body.classList.add('flash');
-      setTimeout(() => document.body.classList.remove('flash'), 800);
+      document.body.classList.add('flashing');
+      const once = (i) => {
+        document.body.classList.add('flash');
+        setTimeout(() => {
+          document.body.classList.remove('flash');
+          if (i < 2) {
+            setTimeout(() => once(i + 1), 130);
+          } else {
+            setTimeout(() => document.body.classList.remove('flashing'), 220);
+          }
+        }, 200);
+      };
+      once(0);
     }
     window.flashRed = flashRed;
 
@@ -87,9 +151,7 @@
           if (msg.event === 'flash') flashRed();
         } catch (_) { /* ignore */ }
       };
-      es.onerror = () => {
-        // EventSource auto-reconnects; nothing to do here.
-      };
+      es.onerror = () => { /* EventSource auto-reconnects */ };
     }
 
     async function paintMe() {
@@ -99,6 +161,10 @@
         const color = await fetchColor(session);
         document.body.style.backgroundColor = color.hsl;
         $status.textContent = '';
+        $welcome.textContent = WELCOME[color.language] || `Welcome — ${color.language}.`;
+        $lang.textContent    = color.language;
+        $hsl.textContent     = color.hsl;
+        $card.classList.add('ready');
         $debug.textContent = `${color.language} (${color.routed_to}) · ${color.hsl} · session ${session.slice(0, 8)}…`;
       } catch (e) {
         $status.textContent = 'error';

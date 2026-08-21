@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>polyhue — Learn WASM · Component Model · MCP</title>
+<style>
+  :root{
+    --bg:#0b0f17; --panel:#121826; --panel-2:#0e1420; --line:#1f2a3c;
+    --ink:#e7ecf3; --muted:#8a98ad; --faint:#5c6982;
+    --rust:#ff5a1f; --py:#3b82f6; --ts:#f5b301; --policy:#ef2d2d;
+    --accent:#22d3ee; --ok:#34d399;
+    --r:14px; --maxw:1100px;
+    font-synthesis:none;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0; background:radial-gradient(1200px 700px at 80% -10%, #14203a 0%, transparent 55%), var(--bg);
+    color:var(--ink); font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,sans-serif;
+    line-height:1.6; -webkit-font-smoothing:antialiased;
+  }
+  a{color:var(--accent); text-decoration:none}
+  code,.mono{font-family:"SF Mono",ui-monospace,Menlo,Consolas,monospace}
+
+  /* layout */
+  .wrap{max-width:var(--maxw); margin:0 auto; padding:0 22px}
+  header.hero{padding:64px 22px 40px; max-width:var(--maxw); margin:0 auto}
+  .kicker{letter-spacing:.18em; text-transform:uppercase; font-size:12px; color:var(--accent); font-weight:700}
+  h1.title{font-size:clamp(38px,7vw,72px); margin:.15em 0 .1em; font-weight:800; letter-spacing:-.02em;
+    background:linear-gradient(92deg,#fff, #9fd4ff 60%, var(--accent)); -webkit-background-clip:text; background-clip:text; color:transparent}
+  .sub{font-size:clamp(15px,2vw,19px); color:var(--muted); max-width:680px}
+  .chips{display:flex; gap:10px; margin-top:22px; flex-wrap:wrap}
+  .chip{display:inline-flex; align-items:center; gap:8px; padding:7px 13px; border:1px solid var(--line);
+    border-radius:999px; font-size:13px; font-weight:600; background:var(--panel)}
+  .dot{width:11px; height:11px; border-radius:50%}
+  .d-rust{background:var(--rust)} .d-py{background:var(--py)} .d-ts{background:var(--ts)} .d-pol{background:var(--policy)}
+
+  /* sticky nav */
+  nav.toc{position:sticky; top:0; z-index:50; backdrop-filter:blur(10px);
+    background:rgba(11,15,23,.72); border-bottom:1px solid var(--line)}
+  nav.toc .inner{max-width:var(--maxw); margin:0 auto; display:flex; gap:4px; padding:10px 22px; overflow-x:auto}
+  nav.toc button{white-space:nowrap; background:transparent; border:0; color:var(--muted); font-size:13.5px;
+    font-weight:600; padding:8px 12px; border-radius:9px; cursor:pointer; transition:.15s}
+  nav.toc button:hover{color:var(--ink); background:var(--panel)}
+  nav.toc button.active{color:#fff; background:linear-gradient(180deg,#1c3a52,#142838)}
+
+  section{padding:54px 0; border-bottom:1px solid var(--line)}
+  section h2{font-size:clamp(24px,3.4vw,34px); margin:0 0 6px; letter-spacing:-.01em}
+  .lead{color:var(--muted); max-width:720px; margin:0 0 26px}
+  .secnum{color:var(--faint); font-weight:700; font-size:13px; letter-spacing:.1em}
+
+  .grid{display:grid; gap:16px}
+  .g2{grid-template-columns:1fr 1fr}
+  .g3{grid-template-columns:repeat(3,1fr)}
+  @media(max-width:780px){.g2,.g3{grid-template-columns:1fr}}
+
+  .card{background:linear-gradient(180deg,var(--panel),var(--panel-2)); border:1px solid var(--line);
+    border-radius:var(--r); padding:20px}
+  .card h3{margin:0 0 6px; font-size:17px}
+  .card p{margin:0; color:var(--muted); font-size:14.5px}
+  .pill{display:inline-block; font-size:11px; font-weight:700; letter-spacing:.05em; text-transform:uppercase;
+    padding:3px 8px; border-radius:6px; margin-bottom:10px}
+
+  .callout{border-left:3px solid var(--accent); background:var(--panel); padding:14px 18px; border-radius:0 12px 12px 0; margin:18px 0}
+  .callout.warn{border-color:var(--ts)} .callout.danger{border-color:var(--policy)}
+  .callout b{color:#fff}
+
+  /* interactive: flashcards / reveal */
+  .flip{perspective:1000px; cursor:pointer; height:150px}
+  .flip-in{position:relative; width:100%; height:100%; transition:transform .5s; transform-style:preserve-3d}
+  .flip.on .flip-in{transform:rotateY(180deg)}
+  .flip-f,.flip-b{position:absolute; inset:0; backface-visibility:hidden; border:1px solid var(--line);
+    border-radius:var(--r); padding:18px; display:flex; flex-direction:column; justify-content:center;
+    background:linear-gradient(180deg,var(--panel),var(--panel-2))}
+  .flip-b{transform:rotateY(180deg); background:linear-gradient(180deg,#13243a,#0e1622)}
+  .flip small{color:var(--faint); font-size:11px; text-transform:uppercase; letter-spacing:.1em}
+
+  /* compose animation */
+  .stage{background:var(--panel-2); border:1px solid var(--line); border-radius:var(--r); padding:26px; position:relative; overflow:hidden}
+  .compose{display:grid; grid-template-columns:170px 1fr 200px; gap:18px; align-items:center}
+  @media(max-width:780px){.compose{grid-template-columns:1fr; text-align:center}}
+  .blocks{display:flex; flex-direction:column; gap:10px}
+  .blk{border:1px solid var(--line); border-radius:10px; padding:10px 12px; font-weight:600; font-size:13.5px;
+    display:flex; align-items:center; gap:9px; background:var(--panel); transition:.5s; opacity:.95}
+  .blk .mono{font-size:12px; color:var(--muted); margin-left:auto}
+  .blocks.composed .blk{transform:translateX(40px) scale(.85); opacity:.25}
+  .artifact{justify-self:center; text-align:center}
+  .wasmbox{width:150px; height:150px; border-radius:18px; display:flex; flex-direction:column; align-items:center;
+    justify-content:center; gap:6px; font-weight:800; border:2px solid var(--accent);
+    background:radial-gradient(circle at 50% 30%, #15324a, #0c1622); transition:.6s; transform:scale(.7); opacity:.4}
+  .wasmbox.on{transform:scale(1); opacity:1; box-shadow:0 0 50px -8px var(--accent)}
+  .wasmbox span{font-size:12px; color:var(--accent); font-weight:600}
+  .served{display:flex; flex-direction:column; gap:8px; font-size:13px; color:var(--muted)}
+  .btn{background:linear-gradient(180deg,#1a82c9,#0f5e95); border:0; color:#fff; font-weight:700; font-size:14px;
+    padding:11px 18px; border-radius:10px; cursor:pointer; transition:.15s}
+  .btn:hover{filter:brightness(1.12)} .btn:active{transform:translateY(1px)}
+  .btn.ghost{background:var(--panel); border:1px solid var(--line); color:var(--ink)}
+  .btn.danger{background:linear-gradient(180deg,#e0322f,#b01d1b)}
+  .ctrls{display:flex; gap:10px; flex-wrap:wrap; margin-top:20px}
+
+  /* size bars */
+  .sizerow{display:grid; grid-template-columns:130px 1fr 90px; gap:14px; align-items:center; margin:12px 0}
+  .sizebar{height:22px; border-radius:6px; background:var(--line); position:relative; overflow:hidden}
+  .sizefill{height:100%; border-radius:6px; width:0; transition:width 1.1s cubic-bezier(.2,.8,.2,1)}
+  .sizeval{text-align:right; font-variant-numeric:tabular-nums; color:var(--muted); font-size:13px}
+  .lbl{display:flex; align-items:center; gap:8px; font-weight:600; font-size:14px}
+
+  /* policy simulator */
+  .sim{display:grid; grid-template-columns:1fr 1fr; gap:18px}
+  @media(max-width:780px){.sim{grid-template-columns:1fr}}
+  .toolbtns{display:flex; flex-direction:column; gap:9px}
+  .toolbtn{text-align:left; border:1px solid var(--line); background:var(--panel); color:var(--ink);
+    padding:11px 14px; border-radius:10px; cursor:pointer; font-weight:600; font-size:14px; transition:.15s}
+  .toolbtn:hover{border-color:var(--accent)}
+  .toolbtn.sel{border-color:var(--accent); background:#13283a}
+  .verdict{border:1px solid var(--line); border-radius:var(--r); padding:18px; min-height:150px;
+    display:flex; flex-direction:column; gap:10px; justify-content:center}
+  .verdict .tag{font-weight:800; font-size:20px}
+  .allow .tag{color:var(--ok)} .deny .tag{color:var(--policy)}
+  .phones{display:flex; gap:6px; flex-wrap:wrap; margin-top:6px}
+  .phone{width:26px; height:42px; border-radius:5px; border:1px solid var(--line); background:#1b2738; transition:.25s}
+  .phone.red{background:var(--policy); box-shadow:0 0 12px var(--policy)}
+  .phone.c-rust{background:var(--rust)} .phone.c-py{background:var(--py)} .phone.c-ts{background:var(--ts)}
+  body.flashing{animation:flash .35s 3}
+  @keyframes flash{0%,100%{background-color:var(--bg)}50%{background-color:#3a0c0c}}
+
+  /* quiz */
+  .q{background:var(--panel); border:1px solid var(--line); border-radius:var(--r); padding:18px; margin:14px 0}
+  .q .opts{display:grid; gap:8px; margin-top:10px}
+  .opt{text-align:left; border:1px solid var(--line); background:var(--panel-2); color:var(--ink);
+    padding:11px 14px; border-radius:9px; cursor:pointer; font-size:14px; transition:.15s}
+  .opt:hover{border-color:var(--accent)}
+  .opt.right{border-color:var(--ok); background:#0f2a20}
+  .opt.wrong{border-color:var(--policy); background:#2a1010}
+  .q .why{margin-top:10px; font-size:13.5px; color:var(--muted); display:none}
+  .q.answered .why{display:block}
+  #score{font-weight:800; color:var(--accent)}
+
+  /* anchor offset for sticky nav */
+  section[id]{scroll-margin-top:60px}
+  footer{padding:40px 22px 70px; max-width:var(--maxw); margin:0 auto; color:var(--faint); font-size:13px}
+  .anchor60{font-size:13px; color:var(--muted); margin-top:8px}
+  .twocol{columns:2; column-gap:26px} @media(max-width:680px){.twocol{columns:1}}
+  ul.clean{margin:0; padding-left:18px} ul.clean li{margin:6px 0; color:var(--muted)}
+  ul.clean li b{color:var(--ink)}
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="kicker">Talk prep · WebAssembly Component Model + MCP</div>
+  <h1 class="title">polyhue, explained</h1>
+  <p class="sub">One WASM binary · three languages · zero glue. An interactive walkthrough — from "what even is WASM" up to the live demo's red-flash beat.</p>
+  <div class="chips">
+    <span class="chip"><span class="dot d-rust"></span>Rust · red-orange</span>
+    <span class="chip"><span class="dot d-py"></span>Python · blue</span>
+    <span class="chip"><span class="dot d-ts"></span>TypeScript · gold</span>
+    <span class="chip"><span class="dot d-pol"></span>Policy gate · red</span>
+  </div>
+</header>
+
+<nav class="toc">
+  <div class="inner" id="toc"></div>
+</nav>
+
+<div class="wrap">
+
+  <!-- 1 WASM -->
+  <section id="wasm">
+    <div class="secnum">LAYER 01</div>
+    <h2>What is WebAssembly?</h2>
+    <p class="lead">A portable binary instruction format — a compile target that runs at near-native speed inside a sandbox. You compile Rust, Python, TypeScript, Go… <i>down to</i> WASM, and any runtime can execute it. Think "assembly for a virtual CPU that doesn't physically exist."</p>
+    <div class="grid g3">
+      <div class="card"><span class="pill" style="background:#13283a;color:var(--accent)">Portable</span><h3>One binary, runs anywhere</h3><p>Any OS/CPU with a runtime. Like a container — but the unit is a function-level sandbox, not a whole Linux userland.</p></div>
+      <div class="card"><span class="pill" style="background:#2a1010;color:var(--policy)">Sandboxed</span><h3>Can do nothing by default</h3><p>No files, no network, no clock — unless the host explicitly grants the capability. Deny-by-default isolation.</p></div>
+      <div class="card"><span class="pill" style="background:#0f2a20;color:var(--ok)">Fast &amp; tiny</span><h3>Microsecond cold start</h3><p>No OS boot like a VM or container. Modules can be kilobytes.</p></div>
+    </div>
+    <div class="callout"><b>Say this on stage →</b> A container ships an entire OS image and isolates via the kernel (namespaces/cgroups). WASM isolates via the <i>language sandbox</i> and ships just the code: smaller, faster cold-start, finer-grained.</div>
+  </section>
+
+  <!-- 2 Component Model -->
+  <section id="cm">
+    <div class="secnum">LAYER 02</div>
+    <h2>The gap WASM <i>had</i> — and the Component Model</h2>
+    <p class="lead">Plain WASM modules only speak in <b>numbers</b> — i32, i64, f32, f64. No strings, no structs, no lists at the boundary. So two modules from two languages couldn't really talk without hand-written byte-marshalling glue. The <b>Component Model</b> fixes this with typed interfaces.</p>
+    <div class="grid g2">
+      <div class="card"><h3>WIT — WASM Interface Types</h3><p>The IDL (like protobuf / OpenAPI) where you declare interfaces in <i>rich</i> types — strings, records, lists, results. Each component says "I import these, I export these"; the runtime does the marshalling.</p></div>
+      <div class="card"><h3>A component = module + WIT</h3><p>The composable unit. <code>wasmcp compose</code> snaps components together at their WIT seams into one artifact — no network calls between them, no per-language runtime running as a side process.</p></div>
+    </div>
+    <div class="callout"><b>Stage analogy →</b> WIT is the <i>shape of the plug</i>; the Component Model is the standard socket. Differently-colored language blocks click together because they agree on the plug shape.</div>
+    <p style="color:var(--muted);margin-top:8px">Two of these are flashcards — click to flip:</p>
+    <div class="grid g3" style="margin-top:8px">
+      <div class="flip" onclick="this.classList.toggle('on')"><div class="flip-in">
+        <div class="flip-f"><small>Term</small><h3 style="margin:.3em 0">WASM</h3><p style="color:var(--muted);font-size:13px">Click to reveal</p></div>
+        <div class="flip-b"><small>Plain language</small><p style="color:var(--ink);font-size:14px">A portable, sandboxed binary you compile any language down to. Runs near-native in any runtime.</p></div>
+      </div></div>
+      <div class="flip" onclick="this.classList.toggle('on')"><div class="flip-in">
+        <div class="flip-f"><small>Term</small><h3 style="margin:.3em 0">Component Model</h3><p style="color:var(--muted);font-size:13px">Click to reveal</p></div>
+        <div class="flip-b"><small>Plain language</small><p style="color:var(--ink);font-size:14px">The standard that lets WASM modules from different languages interoperate &amp; compose into one binary via typed interfaces.</p></div>
+      </div></div>
+      <div class="flip" onclick="this.classList.toggle('on')"><div class="flip-in">
+        <div class="flip-f"><small>Term</small><h3 style="margin:.3em 0">WIT</h3><p style="color:var(--muted);font-size:13px">Click to reveal</p></div>
+        <div class="flip-b"><small>Plain language</small><p style="color:var(--ink);font-size:14px">The interface definition language for components — declares the rich-typed imports/exports at each seam.</p></div>
+      </div></div>
+    </div>
+  </section>
+
+  <!-- 3 MCP -->
+  <section id="mcp">
+    <div class="secnum">LAYER 03</div>
+    <h2>What is MCP?</h2>
+    <p class="lead"><b>Model Context Protocol</b> — an open standard for exposing callable <b>tools</b> to LLM clients. A server advertises tools (<code>list_tools</code>) with typed input schemas; clients call them (<code>call_tool</code>). "USB-C for LLM tools" — one protocol, any client, any tool.</p>
+    <div class="grid g2">
+      <div class="card"><h3>Every polyhue component is an MCP server</h3>
+        <ul class="clean" style="margin-top:8px">
+          <li><b>color-rs</b> → tool <code>get_color_rs</code> <span class="dot d-rust" style="display:inline-block;vertical-align:middle"></span></li>
+          <li><b>color-py</b> → blue palette <span class="dot d-py" style="display:inline-block;vertical-align:middle"></span></li>
+          <li><b>color-ts</b> → gold palette <span class="dot d-ts" style="display:inline-block;vertical-align:middle"></span></li>
+          <li><b>policy-gate</b> → tool <code>peek_attendees</code> <span class="dot d-pol" style="display:inline-block;vertical-align:middle"></span></li>
+        </ul>
+      </div>
+      <div class="card"><h3>The thesis</h3><p>The composed binary <i>is one MCP server</i> whose tools happen to be implemented in three different languages — plus a real policy gate. One artifact. Zero network glue between the tools.</p></div>
+    </div>
+  </section>
+
+  <!-- 4 Composition -->
+  <section id="compose">
+    <div class="secnum">LAYER 04</div>
+    <h2>Composition, live</h2>
+    <p class="lead">Four components feed <code>wasmcp compose</code> → one <code>dist/polyhue.wasm</code> → served by Spin (:3000) → audience proxy (:8080) → phones. Press the button.</p>
+    <div class="stage">
+      <div class="compose">
+        <div class="blocks" id="blocks">
+          <div class="blk"><span class="dot d-rust"></span>color-rs <span class="mono">~90 KB</span></div>
+          <div class="blk"><span class="dot d-py"></span>color-py <span class="mono">~18 MB</span></div>
+          <div class="blk"><span class="dot d-ts"></span>color-ts <span class="mono">~16 MB</span></div>
+          <div class="blk"><span class="dot d-pol"></span>policy-gate <span class="mono">~763 KB</span></div>
+        </div>
+        <div class="artifact">
+          <div class="wasmbox" id="wasmbox">polyhue.wasm<span>one artifact</span></div>
+        </div>
+        <div class="served">
+          <div>↳ Spin server <code>:3000</code></div>
+          <div>↳ audience proxy <code>:8080</code></div>
+          <div>↳ 📱📱📱 phones paint themselves</div>
+        </div>
+      </div>
+      <div class="ctrls">
+        <button class="btn" id="composeBtn">▶ Run <code>wasmcp compose</code></button>
+        <button class="btn ghost" id="resetBtn">Reset</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- 5 Demo flow -->
+  <section id="flow">
+    <div class="secnum">LAYER 05</div>
+    <h2>What happens when a phone loads the page</h2>
+    <div class="card mono" style="font-size:13.5px;color:var(--muted);white-space:pre-wrap;line-height:1.9">phone loads page → POST /color {seed} → serve.py <b style="color:var(--ink)">hashes seed</b> → picks a language
+   → calls that language's <b style="color:var(--ink)">get_color_* MCP tool</b> → returns HSL → phone paints itself</div>
+    <ul class="clean" style="margin-top:18px">
+      <li>The color is <b>deterministic from the seed</b> — same seed, same hue. So every phone reproducibly sorts into one of three language groups.</li>
+      <li>Each language owns a hue band — Rust <code>hue 10–30</code> (red-orange), Python blue, TS gold.</li>
+      <li><code>serve.py</code> is a dev proxy: routes <code>/color</code>, forwards <code>/mcp</code> to Spin, fans out a Server-Sent-Events stream on <code>/events</code>.</li>
+    </ul>
+  </section>
+
+  <!-- 6 Policy gate -->
+  <section id="policy">
+    <div class="secnum">LAYER 06 · the big beat</div>
+    <h2>The policy gate — two decoupled halves</h2>
+    <p class="lead">Pick a tool to "call." A real Regorus (Rego / OPA engine, compiled Rust→WASM) evaluates the policy <b>in-process, inside the composed binary</b>. Then watch what the <i>proxy</i> chooses to do with a denial.</p>
+    <div class="sim">
+      <div>
+        <div class="toolbtns">
+          <button class="toolbtn sel" data-tool="get_color_rs">call <code>get_color_rs</code></button>
+          <button class="toolbtn" data-tool="get_color_py">call <code>get_color_py</code></button>
+          <button class="toolbtn" data-tool="peek_attendees">call <code>peek_attendees</code> 🔒</button>
+        </div>
+        <div class="card mono" style="margin-top:14px;font-size:12.5px;color:var(--muted);white-space:pre-wrap">default allow := false
+allow if {
+    input.action != "peek_attendees"
+}</div>
+      </div>
+      <div>
+        <div class="verdict allow" id="verdict">
+          <div class="tag">— pick a tool —</div>
+          <div id="vmsg" style="font-size:14px;color:var(--muted)">Regorus evaluates <code>data.authz.allow</code> against the input.</div>
+        </div>
+        <div class="phones" id="phones"></div>
+      </div>
+    </div>
+    <div class="callout danger" style="margin-top:22px"><b>Be precise on stage — this is your credibility:</b>
+      <ul class="clean" style="margin-top:8px">
+        <li><b>The gate is real.</b> A genuine OPA-style policy engine runs in-process — no sidecar, no external PDP. The denial is a first-class signal.</li>
+        <li><b>The red flash is proxy theater, not policy.</b> Regorus denies <i>one caller</i>. <code>serve.py /trigger-denial</code> sees <code>isError:true</code> and <i>chooses</i> to broadcast a <code>flash</code> SSE event to every phone.</li>
+        <li><b>If asked "is that real access control?"</b> — No. No identity/role/user; the policy is a demo prop. Claim the <i>mechanism</i>, not the policy's sophistication.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 7 Tradeoffs -->
+  <section id="tradeoffs">
+    <div class="secnum">LAYER 07</div>
+    <h2>Honest trade-offs — the size gap</h2>
+    <p class="lead">High-level languages bundle their entire runtime/interpreter into the WASM. The Rust sliver vs the Python slab, made visible. Bars animate when this section scrolls into view.</p>
+    <div class="card" id="sizecard">
+      <div class="sizerow"><div class="lbl"><span class="dot d-rust"></span>color-rs</div><div class="sizebar"><div class="sizefill" data-pct="0.5" style="background:var(--rust)"></div></div><div class="sizeval">~90 KB</div></div>
+      <div class="sizerow"><div class="lbl"><span class="dot d-pol"></span>policy-gate</div><div class="sizebar"><div class="sizefill" data-pct="4.2" style="background:var(--policy)"></div></div><div class="sizeval">~763 KB</div></div>
+      <div class="sizerow"><div class="lbl"><span class="dot d-ts"></span>color-ts</div><div class="sizebar"><div class="sizefill" data-pct="89" style="background:var(--ts)"></div></div><div class="sizeval">~16 MB</div></div>
+      <div class="sizerow"><div class="lbl"><span class="dot d-py"></span>color-py</div><div class="sizebar"><div class="sizefill" data-pct="100" style="background:var(--py)"></div></div><div class="sizeval">~18 MB</div></div>
+    </div>
+    <div class="grid g3" style="margin-top:16px">
+      <div class="card"><h3>Sizes balloon</h3><p>Interpreted languages carry their runtime. Rust ships ~90 KB; Python ~18 MB.</p></div>
+      <div class="card"><h3>Toolchain is young</h3><p>componentize-py, jco, wasmcp are early. The browser-test/ folder is parked jco experiments — proof of the rough edges.</p></div>
+      <div class="card"><h3>Ecosystem maturing</h3><p>The standard is solid; tooling around it is catching up.</p></div>
+    </div>
+    <div class="callout warn">Don't rebut these on the slide. The payoff already answers them: one artifact from an OCI registry, a language-agnostic sandbox, no network glue, security composed <i>in</i>.</div>
+  </section>
+
+  <!-- 8 Quiz -->
+  <section id="quiz">
+    <div class="secnum">CHECK YOURSELF</div>
+    <h2>Quick quiz <span id="score"></span></h2>
+    <p class="lead">Five questions to confirm the concepts landed before you walk on stage.</p>
+    <div id="quizbox"></div>
+  </section>
+
+  <!-- 9 60s -->
+  <section id="anchor" style="border-bottom:0">
+    <div class="secnum">YOUR MENTAL ANCHOR</div>
+    <h2>The 60-second version</h2>
+    <div class="card" style="font-size:16px;line-height:1.8">
+      WASM = portable sandboxed binary. Plain WASM only speaks numbers, so languages couldn't compose. The <b>Component Model + WIT</b> give typed interfaces so they <i>can</i> — snapping into one binary. <b>MCP</b> is the standard for exposing tools to LLM clients. polyhue takes three color-tool components in three languages + a real in-process Rego policy gate, composes them with <code>wasmcp</code> into <b>one</b> <code>.wasm</code> MCP server. Phones hit it, sort into three color groups by language, and a real policy denial triggers a room-wide red flash. <b>One binary, three languages, zero glue.</b>
+    </div>
+  </section>
+
+</div>
+
+<footer>
+  polyhue · learning companion · Bharath Nallapeta (Mirantis) · built for the WASM Component Model + MCP talk.<br>
+  Resources: WASM Component Model · wasmcp · MCP · Regorus (Rego/OPA engine in Rust).
+</footer>
+
+<script>
+// ---- TOC build + scrollspy ----
+const secs=[["wasm","WASM"],["cm","Component Model"],["mcp","MCP"],["compose","Composition"],["flow","Demo flow"],["policy","Policy gate"],["tradeoffs","Trade-offs"],["quiz","Quiz"],["anchor","60-sec"]];
+const toc=document.getElementById('toc');
+secs.forEach(([id,label])=>{const b=document.createElement('button');b.textContent=label;b.onclick=()=>document.getElementById(id).scrollIntoView();b.dataset.id=id;toc.appendChild(b);});
+const io=new IntersectionObserver(es=>{es.forEach(e=>{if(e.isIntersecting){document.querySelectorAll('#toc button').forEach(b=>b.classList.toggle('active',b.dataset.id===e.target.id));}})},{rootMargin:'-45% 0px -50% 0px'});
+secs.forEach(([id])=>io.observe(document.getElementById(id)));
+
+// ---- compose animation ----
+const blocks=document.getElementById('blocks'),wasmbox=document.getElementById('wasmbox');
+document.getElementById('composeBtn').onclick=()=>{blocks.classList.add('composed');setTimeout(()=>wasmbox.classList.add('on'),350);};
+document.getElementById('resetBtn').onclick=()=>{blocks.classList.remove('composed');wasmbox.classList.remove('on');};
+
+// ---- size bars on scroll ----
+const sizeIO=new IntersectionObserver(es=>{es.forEach(e=>{if(e.isIntersecting){document.querySelectorAll('.sizefill').forEach(f=>f.style.width=f.dataset.pct+'%');sizeIO.disconnect();}})},{threshold:.4});
+sizeIO.observe(document.getElementById('sizecard'));
+
+// ---- policy simulator ----
+const phonesEl=document.getElementById('phones');
+const colors=['c-rust','c-py','c-ts'];
+const PHONES=18;
+function renderPhones(mode){phonesEl.innerHTML='';for(let i=0;i<PHONES;i++){const p=document.createElement('div');p.className='phone';if(mode==='flash')p.classList.add('red');else p.classList.add(colors[i%3]);phonesEl.appendChild(p);}}
+renderPhones('color');
+const verdict=document.getElementById('verdict'),vmsg=document.getElementById('vmsg');
+document.querySelectorAll('.toolbtn').forEach(btn=>btn.onclick=()=>{
+  document.querySelectorAll('.toolbtn').forEach(b=>b.classList.remove('sel'));btn.classList.add('sel');
+  const tool=btn.dataset.tool, denied = tool==='peek_attendees';
+  if(denied){
+    verdict.className='verdict deny';
+    verdict.querySelector('.tag').textContent='✗ DENY';
+    vmsg.innerHTML='Regorus: <code>action "peek_attendees" is never allowed</code>. Tool returns <code>isError:true</code> → proxy <i>chooses</i> to broadcast <code>flash</code> to all phones.';
+    renderPhones('flash');
+    document.body.classList.add('flashing');
+    setTimeout(()=>document.body.classList.remove('flashing'),1100);
+  }else{
+    verdict.className='verdict allow';
+    verdict.querySelector('.tag').textContent='✓ ALLOW';
+    vmsg.innerHTML='Regorus: <code>allow = true</code>. Tool runs, returns an HSL color. No flash — only this caller is served.';
+    renderPhones('color');
+  }
+});
+
+// ---- quiz ----
+const QUIZ=[
+ {q:"Why couldn't plain WASM modules from different languages compose before the Component Model?",
+  o:["They ran too slowly","They could only exchange numbers at the boundary — no strings/structs","They needed Docker","WASM didn't support Rust"],a:1,
+  why:"Plain WASM boundaries only carry i32/i64/f32/f64. Rich types (strings, records, lists) needed hand-written marshalling — until WIT."},
+ {q:"What does WIT provide?",
+  o:["A WASM runtime","A package registry","Typed interfaces (IDL) at each component seam","A garbage collector"],a:2,
+  why:"WIT is the interface definition language — the typed 'plug shape' that lets components snap together."},
+ {q:"In one line, MCP is…",
+  o:["A container format","A standard for exposing callable tools to LLM clients","A Rust web framework","A WASM compiler"],a:1,
+  why:"MCP = Model Context Protocol. Servers advertise tools via list_tools; clients invoke via call_tool."},
+ {q:"In polyhue, what actually triggers the room-wide red flash?",
+  o:["Regorus broadcasts it","The proxy (serve.py) chooses to, after seeing the denial","The phones poll for it","Spin emits it automatically"],a:1,
+  why:"Regorus denies one caller. serve.py sees isError and broadcasts a flash SSE event to all phones — that's stagecraft, not policy."},
+ {q:"What's the honest claim about the Regorus gate?",
+  o:["It's full RBAC with users and roles","It's fake, just a hard-coded if","A real OPA-style engine runs in-process; the policy itself is a demo prop","It runs as a sidecar PDP"],a:2,
+  why:"Claim the mechanism (real in-process Rego engine, no sidecar), not the policy's sophistication (no identity/roles)."}
+];
+let answered=0,correct=0;
+const qb=document.getElementById('quizbox');
+QUIZ.forEach((item,qi)=>{
+  const d=document.createElement('div');d.className='q';
+  d.innerHTML=`<div style="font-weight:600">${qi+1}. ${item.q}</div><div class="opts"></div><div class="why">💡 ${item.why}</div>`;
+  const opts=d.querySelector('.opts');
+  item.o.forEach((txt,oi)=>{const b=document.createElement('button');b.className='opt';b.textContent=txt;
+    b.onclick=()=>{if(d.classList.contains('answered'))return;d.classList.add('answered');answered++;
+      if(oi===item.a){b.classList.add('right');correct++;}else{b.classList.add('wrong');opts.children[item.a].classList.add('right');}
+      document.getElementById('score').textContent=`${correct}/${answered}`;};
+    opts.appendChild(b);});
+  qb.appendChild(d);
+});
+</script>
+</body>
+</html>
