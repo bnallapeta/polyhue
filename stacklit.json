@@ -1,9 +1,9 @@
 {
   "$schema": "https://stacklit.dev/schema/v1.json",
   "version": "1",
-  "generated_at": "2026-06-08T03:49:32Z",
+  "generated_at": "2026-08-21T08:32:04Z",
   "stacklit_version": "dev",
-  "merkle_hash": "ebca665af00f29e60baec537ae080b98e08a00e95291711123cfa0b9556f0e0a",
+  "merkle_hash": "d25956aa74eec1fb3c91e8c17ac9c73257d95736391e17689e28886bd63301ef",
   "project": {
     "name": "wasm_mcp_summit",
     "root": ".",
@@ -18,7 +18,7 @@
       },
       "python": {
         "files": 10,
-        "lines": 1878
+        "lines": 1916
       },
       "rust": {
         "files": 2,
@@ -33,14 +33,14 @@
   "structure": {
     "entrypoints": null,
     "total_files": 15,
-    "total_lines": 2335
+    "total_lines": 2373
   },
   "modules": {
     "audience": {
       "purpose": "Audience",
       "language": "python",
       "files": 1,
-      "lines": 248,
+      "lines": 280,
       "file_list": [
         "serve.py"
       ],
@@ -182,7 +182,7 @@
       "purpose": "Scripts",
       "language": "python",
       "files": 3,
-      "lines": 271,
+      "lines": 277,
       "file_list": [
         "profile-sizes.py",
         "smoke-test.py",
@@ -227,12 +227,8 @@
   "git": {
     "hot_files": [
       {
-        "path": ".gitignore",
-        "commits_90d": 3
-      },
-      {
-        "path": "README.md",
-        "commits_90d": 3
+        "path": "DEPENDENCIES.md",
+        "commits_90d": 2
       },
       {
         "path": "scripts/smoke-test.py",
@@ -243,19 +239,15 @@
         "commits_90d": 2
       },
       {
-        "path": "DEPENDENCIES.md",
+        "path": "stacklit.json",
+        "commits_90d": 2
+      },
+      {
+        "path": ".gitignore",
         "commits_90d": 1
       },
       {
-        "path": "LICENSE",
-        "commits_90d": 1
-      },
-      {
-        "path": "Makefile",
-        "commits_90d": 1
-      },
-      {
-        "path": "NOTICE",
+        "path": "README.md",
         "commits_90d": 1
       },
       {
@@ -263,77 +255,38 @@
         "commits_90d": 1
       },
       {
-        "path": "audience/serve.py",
+        "path": "learning/index.html",
         "commits_90d": 1
       },
       {
-        "path": "components/color-py/Makefile",
-        "commits_90d": 1
-      },
-      {
-        "path": "components/color-py/README.md",
-        "commits_90d": 1
-      },
-      {
-        "path": "components/color-py/app.py",
-        "commits_90d": 1
-      },
-      {
-        "path": "components/color-py/componentize_py_async_support/__init__.py",
-        "commits_90d": 1
-      },
-      {
-        "path": "components/color-py/componentize_py_async_support/futures.py",
-        "commits_90d": 1
-      },
-      {
-        "path": "components/color-py/componentize_py_async_support/streams.py",
-        "commits_90d": 1
-      },
-      {
-        "path": "components/color-py/componentize_py_runtime.pyi",
-        "commits_90d": 1
-      },
-      {
-        "path": "components/color-py/componentize_py_types.py",
-        "commits_90d": 1
-      },
-      {
-        "path": "components/color-py/poll_loop.py",
-        "commits_90d": 1
-      },
-      {
-        "path": "components/color-py/wit/deps.lock",
+        "path": "orange-pi.md",
         "commits_90d": 1
       }
     ],
     "recent": [
+      "README.md",
+      "audience/index.html",
+      "learning/index.html",
+      "DEPENDENCIES.md",
+      "stacklit.json",
       "orange-pi.md",
       "scripts/smoke-test.py",
       "scripts/stress-sse.py",
-      ".gitignore",
-      "DEPENDENCIES.md",
-      "stacklit.json",
-      "README.md",
-      "experiments/browser-test/package.json",
-      "experiments/browser-test/test.html",
-      "experiments/browser-test/wasi-keyvalue-shim.mjs"
+      ".gitignore"
     ],
     "stable": [
-      "DEPENDENCIES.md",
-      "LICENSE",
-      "Makefile",
-      "NOTICE",
+      ".gitignore",
+      "README.md",
       "audience/index.html",
-      "audience/serve.py",
-      "components/color-py/Makefile",
-      "components/color-py/README.md",
-      "components/color-py/app.py",
-      "components/color-py/componentize_py_async_support/__init__.py"
+      "learning/index.html",
+      "orange-pi.md"
     ]
   },
   "hints": {
-    "test_command": "make test"
+    "test_command": "make test",
+    "env_vars": [
+      "ADMIN_TOKEN"
+    ]
   },
   "architecture": {}
 }
