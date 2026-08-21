@@ -49,7 +49,7 @@ Then open <http://localhost:8080/> in one or more browser tabs. Each tab gets as
 Trigger the policy denial → red-flash beat from another terminal:
 
 ```bash
-curl -X POST http://localhost:8080/trigger-denial
+curl -X POST http://localhost:8080/trigger-denial -H "X-Admin-Token: $ADMIN_TOKEN"
 ```
 
 Every connected tab flashes red at once. The response tells you how many were reached and why Regorus denied.
@@ -69,7 +69,8 @@ Every connected tab flashes red at once. The response tells you how many were re
 
 This is a live-demo project. A few defaults that are fine for a single laptop in a controlled room, but matter the moment you put it on a real network:
 
-- `audience/serve.py` binds to `0.0.0.0:8080`. `/broadcast`, `/trigger-denial`, and `/mcp` have **no authentication** — anyone on the same network can list tools or trigger the red-flash beat.
+- `audience/serve.py` binds to `0.0.0.0:8080`. `/broadcast`, `/trigger-denial`, and `/mcp` require an admin token in an `X-Admin-Token` header; set it with `ADMIN_TOKEN`, or a random one is generated and printed at startup. There is no unauthenticated mode — a forgotten env var generates a token rather than falling open. The audience paths (`/`, `/color`, `/events`) are deliberately open, since phones must reach them with no credential.
+- **No localhost exemption, on purpose.** Behind Tailscale Funnel the proxy target is `127.0.0.1:8080`, so every public request arrives looking like it came from localhost. Trusting the source IP would expose the admin endpoints to the internet.
 - The wasmcp server (Spin) runs in public mode. No auth on `/mcp` either.
 - No rate limiting anywhere.
 

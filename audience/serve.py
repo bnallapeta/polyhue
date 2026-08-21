@@ -11,15 +11,26 @@ Endpoints:
                           subscribers. Stage uses this.
     POST /mcp             raw MCP passthrough to the upstream Spin server.
 
+/broadcast, /trigger-denial and /mcp are admin endpoints: they require the
+token in an X-Admin-Token header. Set ADMIN_TOKEN to choose it, otherwise a
+random one is generated at startup and printed below. The audience page itself
+(/, /color, /events) stays open — phones need no token.
+
+Note: when fronted by Tailscale Funnel the proxy makes every public request
+look like it came from 127.0.0.1, so there is deliberately no localhost
+exemption here.
+
 Run:
     python3 serve.py            # listens on 0.0.0.0:8080
     PORT=9000 python3 serve.py  # custom port
+    ADMIN_TOKEN=hunter2 python3 serve.py
 """
 
 import json
 import hashlib
 import os
 import queue
+import secrets
 import sys
 import threading
 import urllib.request
@@ -30,6 +41,13 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 MCP_UPSTREAM = os.environ.get("MCP_UPSTREAM", "http://127.0.0.1:3000/mcp")
 PORT = int(os.environ.get("PORT", "8080"))
 LANGUAGES = ("rs", "py", "ts")
+
+# Endpoints that can drive the stage. Never left unauthenticated: if no token is
+# supplied we invent one rather than falling open, so a forgotten env var can't
+# hand the red-flash beat to the room.
+ADMIN_PATHS = ("/broadcast", "/trigger-denial", "/mcp")
+ADMIN_TOKEN = os.environ.get("ADMIN_TOKEN") or secrets.token_urlsafe(16)
+ADMIN_TOKEN_GENERATED = "ADMIN_TOKEN" not in os.environ
 
 # Thread-safe set of subscriber queues for SSE.
 _subscribers_lock = threading.Lock()
@@ -99,7 +117,16 @@ class Handler(SimpleHTTPRequestHandler):
             return
         super().do_GET()
 
+    def _admin_ok(self) -> bool:
+        """Constant-time check of the X-Admin-Token header."""
+        return secrets.compare_digest(
+            self.headers.get("X-Admin-Token", ""), ADMIN_TOKEN
+        )
+
     def do_POST(self):
+        if self.path in ADMIN_PATHS and not self._admin_ok():
+            self._write_json(403, {"error": "admin token required"})
+            return
         if self.path == "/color":
             self._serve_color()
         elif self.path == "/mcp":
@@ -243,6 +270,11 @@ class Handler(SimpleHTTPRequestHandler):
 if __name__ == "__main__":
     print(f"audience page:  http://localhost:{PORT}/", file=sys.stderr)
     print(f"proxying /mcp → {MCP_UPSTREAM}", file=sys.stderr)
-    print(f"broadcast a flash:    curl -X POST http://localhost:{PORT}/broadcast -d '{{\"event\":\"flash\"}}'", file=sys.stderr)
-    print(f"trigger Regorus deny: curl -X POST http://localhost:{PORT}/trigger-denial", file=sys.stderr)
+    if ADMIN_TOKEN_GENERATED:
+        print(f"admin token (generated): {ADMIN_TOKEN}", file=sys.stderr)
+        print("  set ADMIN_TOKEN=... to pin it across restarts", file=sys.stderr)
+    else:
+        print("admin token: from ADMIN_TOKEN env var", file=sys.stderr)
+    print(f"broadcast a flash:    curl -X POST http://localhost:{PORT}/broadcast -H 'X-Admin-Token: {ADMIN_TOKEN}' -d '{{\"event\":\"flash\"}}'", file=sys.stderr)
+    print(f"trigger Regorus deny: curl -X POST http://localhost:{PORT}/trigger-denial -H 'X-Admin-Token: {ADMIN_TOKEN}'", file=sys.stderr)
     ThreadingHTTPServer(("0.0.0.0", PORT), Handler).serve_forever()

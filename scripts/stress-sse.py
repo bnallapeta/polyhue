@@ -30,7 +30,8 @@ def subscribe(idx, results: queue.Queue, ready: threading.Event):
 def trigger():
     body = b""
     req = urllib.request.Request(
-        f"{BASE}/trigger-denial", data=body, method="POST"
+        f"{BASE}/trigger-denial", data=body, method="POST",
+        headers={"X-Admin-Token": os.environ.get("ADMIN_TOKEN", "")},
     )
     try:
         with urllib.request.urlopen(req, timeout=10) as resp:

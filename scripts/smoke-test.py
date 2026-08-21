@@ -17,10 +17,16 @@ import urllib.request
 import urllib.error
 
 BASE = os.environ.get("BASE", "http://127.0.0.1:8080")
+# /trigger-denial and /broadcast are admin endpoints; must match the server's token.
+ADMIN_TOKEN = os.environ.get("ADMIN_TOKEN", "")
+ADMIN_HEADERS = {"Content-Type": "application/json", "X-Admin-Token": ADMIN_TOKEN}
 PASS = "\033[32mPASS\033[0m"
 FAIL = "\033[31mFAIL\033[0m"
 
 failures = 0
+
+if not ADMIN_TOKEN:
+    print("  note: ADMIN_TOKEN is unset — the admin-endpoint checks will fail with 403.")
 
 
 def check(label, ok, detail=""):
@@ -34,8 +40,7 @@ def check(label, ok, detail=""):
 def post(path, body=None):
     data = json.dumps(body).encode() if body else b""
     req = urllib.request.Request(
-        f"{BASE}{path}", data=data, method="POST",
-        headers={"Content-Type": "application/json"},
+        f"{BASE}{path}", data=data, method="POST", headers=ADMIN_HEADERS,
     )
     with urllib.request.urlopen(req, timeout=10) as r:
         return json.loads(r.read())
@@ -100,7 +105,7 @@ try:
         urllib.request.Request(
             f"{BASE}/broadcast", method="POST",
             data=json.dumps({"event": "flash"}).encode(),
-            headers={"Content-Type": "application/json"},
+            headers=ADMIN_HEADERS,
         ),
         timeout=5,
     )
